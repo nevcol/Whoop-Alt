@@ -7,6 +7,7 @@ import { settingsRouter } from './routes/settings.ts';
 import { clientsRouter } from './routes/clients.ts';
 import { invoicesRouter } from './routes/invoices.ts';
 import { estimatesRouter } from './routes/estimates.ts';
+import { servicesRouter } from './routes/services.ts';
 import { reportsRouter } from './routes/reports.ts';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -21,6 +22,7 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/clients', clientsRouter);
 app.use('/api/invoices', invoicesRouter);
 app.use('/api/estimates', estimatesRouter);
+app.use('/api/services', servicesRouter);
 app.use('/api/reports', reportsRouter);
 
 // Fallback JSON 404 for unmatched API routes.

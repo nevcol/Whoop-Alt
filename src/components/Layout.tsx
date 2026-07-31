@@ -5,6 +5,7 @@ const links = [
   { to: '/invoices', label: 'Invoices', icon: '🧾', end: false },
   { to: '/estimates', label: 'Estimates', icon: '📄', end: false },
   { to: '/clients', label: 'Clients', icon: '👥', end: false },
+  { to: '/services', label: 'Services', icon: '🏋', end: false },
   { to: '/settings', label: 'Settings', icon: '⚙', end: false },
 ];
 

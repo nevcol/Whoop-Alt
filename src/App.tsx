@@ -9,6 +9,7 @@ import { InvoiceDetail } from './pages/InvoiceDetail';
 import { Estimates } from './pages/Estimates';
 import { EstimateEditor } from './pages/EstimateEditor';
 import { EstimateDetail } from './pages/EstimateDetail';
+import { Services } from './pages/Services';
 import { SettingsPage } from './pages/Settings';
 
 export default function App() {
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="estimates/new" element={<EstimateEditor />} />
         <Route path="estimates/:id" element={<EstimateDetail />} />
         <Route path="estimates/:id/edit" element={<EstimateEditor />} />
+        <Route path="services" element={<Services />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>

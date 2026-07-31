@@ -30,6 +30,18 @@ export interface Client {
   open_invoices?: number;
 }
 
+export interface Service {
+  id: number;
+  name: string;
+  category: string;
+  description: string;
+  rate: number;
+  unit: string;
+  active: number;
+  position: number;
+  created_at: string;
+}
+
 export interface LineItem {
   id?: number;
   description: string;

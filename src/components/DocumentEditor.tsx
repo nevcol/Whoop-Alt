@@ -5,9 +5,11 @@ import type {
   Estimate,
   Invoice,
   LineItem,
+  Service,
   Settings,
 } from '../lib/types';
 import { api } from '../lib/api';
+import { useAsync } from '../lib/useAsync';
 import { money, todayISO, addDaysISO } from '../lib/format';
 import { Button, Field, useToast } from './ui';
 
@@ -58,6 +60,7 @@ export function DocumentEditor({
       : [{ description: '', quantity: 1, rate: 0 }],
   );
   const [saving, setSaving] = useState(false);
+  const { data: services } = useAsync(() => api.listServices(), []);
 
   const totals = useMemo(() => {
     const subtotal = round2(
@@ -75,6 +78,22 @@ export function DocumentEditor({
   }
   function addItem() {
     setItems((prev) => [...prev, { description: '', quantity: 1, rate: 0 }]);
+  }
+  /** Append a saved service as a line item (replacing a blank first row). */
+  function addService(service: Service) {
+    const line: LineItem = {
+      description: service.description
+        ? `${service.name} — ${service.description}`
+        : service.name,
+      quantity: 1,
+      rate: service.rate,
+    };
+    setItems((prev) => {
+      const isBlank = (it: LineItem) =>
+        !it.description.trim() && !it.rate && (it.quantity === 1 || !it.quantity);
+      if (prev.length === 1 && isBlank(prev[0])) return [line];
+      return [...prev, line];
+    });
   }
   function removeItem(idx: number) {
     setItems((prev) =>
@@ -247,10 +266,43 @@ export function DocumentEditor({
             </tbody>
           </table>
         </div>
-        <div style={{ marginTop: 12 }}>
+        <div
+          style={{
+            marginTop: 12,
+            display: 'flex',
+            gap: 10,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
           <Button variant="ghost" size="sm" onClick={addItem} type="button">
             + Add line item
           </Button>
+          {services && services.length > 0 && (
+            <select
+              className="inp"
+              style={{ width: 'auto', minWidth: 240 }}
+              value=""
+              onChange={(e) => {
+                const svc = services.find((s) => String(s.id) === e.target.value);
+                if (svc) addService(svc);
+                e.target.value = '';
+              }}
+            >
+              <option value="">+ Add from services…</option>
+              {[...new Set(services.map((s) => s.category))].map((cat) => (
+                <optgroup key={cat} label={cat}>
+                  {services
+                    .filter((s) => s.category === cat)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} — {money(s.rate, settings.currency)}/{s.unit}
+                      </option>
+                    ))}
+                </optgroup>
+              ))}
+            </select>
+          )}
         </div>
 
         <div className="summary-box" style={{ marginTop: 18 }}>

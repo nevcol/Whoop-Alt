@@ -1,8 +1,13 @@
 # Ledgerly
 
-An open-source **QuickBooks alternative** for freelancers and small businesses:
-manage clients, send invoices and estimates, record payments, export polished
-PDFs, and track your revenue — all from a clean, self-hosted app.
+An open-source **QuickBooks alternative** built for coaches, trainers and
+speakers: manage clients, send invoices and estimates, record payments, export
+polished PDFs, and track your revenue — all from a clean, self-hosted app.
+
+It ships with a **service catalog** covering the way a coaching business
+actually bills — personal training, strength & conditioning, tennis coaching,
+tennis performance, and speaking/teaching engagements — so a session, package or
+keynote drops onto an invoice in one click at the right rate.
 
 ![Dashboard](https://img.shields.io/badge/stack-React%20%2B%20Express%20%2B%20SQLite-0f766e)
 
@@ -17,6 +22,12 @@ PDFs, and track your revenue — all from a clean, self-hosted app.
   automatically: `draft → sent → partial → paid`, and `overdue` once past due.
 - **📄 Estimates / quotes** — build estimates and **convert an accepted estimate
   into a draft invoice** in one click, copying every line item.
+- **🏋 Services & rates** — a reusable catalog of what you bill for, grouped by
+  category (Personal Training, Strength & Conditioning, Tennis Coaching, Tennis
+  Performance, Speaking & Education). Pick one from the **“Add from services”**
+  dropdown in any invoice or estimate and the description and rate fill in
+  automatically. Services can be edited, hidden from the picker, or deleted
+  without touching existing invoices.
 - **💵 Payments** — record full or partial payments against an invoice, with
   method and notes; balances and statuses update automatically.
 - **⬇ PDF export & print** — generate a clean, vector invoice/estimate PDF
@@ -35,7 +46,9 @@ PDFs, and track your revenue — all from a clean, self-hosted app.
 
 The database is a single local SQLite file — no external services to set up.
 Data persists across restarts, and the schema is created automatically on first
-run. A set of realistic demo data (clients, invoices, estimates, payments) is
+run. A set of realistic demo data — a service catalog, clients (a junior tennis
+player, a college athletics department, a masters-level player returning from
+rehab, and a conference organizer), plus invoices, estimates and payments — is
 seeded the first time the database is empty.
 
 ## Getting started
@@ -82,6 +95,7 @@ All endpoints are under `/api`:
 | --- | --- | --- |
 | `GET/PUT` | `/settings` | Business profile & defaults |
 | `GET/POST` | `/clients`, `/clients/:id` | Client CRUD (+ billing stats) |
+| `GET/POST/PUT/DELETE` | `/services`, `/services/:id` | Service catalog CRUD (`?all=true` includes hidden) |
 | `GET/POST/PUT/DELETE` | `/invoices`, `/invoices/:id` | Invoice CRUD |
 | `POST` | `/invoices/:id/status` | Mark draft / sent |
 | `POST/DELETE` | `/invoices/:id/payments` | Record / remove a payment |

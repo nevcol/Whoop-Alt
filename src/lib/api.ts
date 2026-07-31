@@ -5,6 +5,7 @@ import type {
   Invoice,
   InvoiceListRow,
   LineItem,
+  Service,
   Settings,
   Summary,
 } from './types';
@@ -105,6 +106,19 @@ export const api = {
     req<Invoice>(`/estimates/${id}/convert`, { method: 'POST' }),
   deleteEstimate: (id: number) =>
     req<{ ok: true }>(`/estimates/${id}`, { method: 'DELETE' }),
+
+  // Services (reusable offerings)
+  listServices: (all = false) =>
+    req<Service[]>(`/services${all ? '?all=true' : ''}`),
+  createService: (data: Partial<Service>) =>
+    req<Service>('/services', { method: 'POST', body: JSON.stringify(data) }),
+  updateService: (id: number, data: Partial<Service>) =>
+    req<Service>(`/services/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteService: (id: number) =>
+    req<{ ok: true }>(`/services/${id}`, { method: 'DELETE' }),
 
   // Reports
   getSummary: () => req<Summary>('/reports/summary'),
