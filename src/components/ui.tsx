@@ -1,160 +1,199 @@
-import type { ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from 'react';
 
-export function Ring({
-  value,
-  max = 100,
-  size = 96,
-  color = 'var(--accent)',
-  label,
-  display,
-}: {
-  value: number | null;
-  max?: number;
-  size?: number;
-  color?: string;
-  label?: string;
-  display?: string;
-}) {
-  const stroke = 9;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const pct = value == null ? 0 : Math.max(0, Math.min(1, value / max));
-  const dash = c * pct;
-
+/* ---------- Button ---------- */
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  size?: 'sm' | 'md';
+};
+export function Button({
+  variant = 'secondary',
+  size = 'md',
+  className = '',
+  ...rest
+}: ButtonProps) {
   return (
-    <div className="ring-wrap">
-      <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="var(--border)"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={color}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${c}`}
-          style={{ transition: 'stroke-dasharray 0.6s ease' }}
-        />
-        <text
-          x="50%"
-          y="50%"
-          dominantBaseline="central"
-          textAnchor="middle"
-          fill="var(--text)"
-          fontSize={size * 0.24}
-          fontWeight={700}
-          style={{ transform: 'rotate(90deg)', transformOrigin: 'center' }}
-        >
-          {display ?? (value == null ? '—' : Math.round(value))}
-        </text>
-      </svg>
-      {label && <div className="ring-label">{label}</div>}
-    </div>
+    <button className={`btn btn-${variant} btn-${size} ${className}`} {...rest} />
   );
 }
 
-export function Sparkline({
-  data,
-  width = 280,
-  height = 70,
-  color = 'var(--accent-2)',
-  fill = true,
+/* ---------- Card ---------- */
+export function Card({
+  children,
+  className = '',
+  title,
+  actions,
 }: {
-  data: (number | null)[];
-  width?: number;
-  height?: number;
-  color?: string;
-  fill?: boolean;
+  children: ReactNode;
+  className?: string;
+  title?: ReactNode;
+  actions?: ReactNode;
 }) {
-  const pts = data
-    .map((v, i) => ({ v, i }))
-    .filter((p): p is { v: number; i: number } => p.v != null);
-  if (pts.length < 2) {
-    return (
-      <div className="muted" style={{ fontSize: 12, padding: '20px 0' }}>
-        Not enough data yet.
-      </div>
-    );
-  }
-  const xs = pts.map((p) => p.i);
-  const ys = pts.map((p) => p.v);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const pad = 6;
-  const sx = (x: number) =>
-    pad + ((x - minX) / Math.max(1, maxX - minX)) * (width - pad * 2);
-  const sy = (y: number) =>
-    height -
-    pad -
-    ((y - minY) / Math.max(1e-9, maxY - minY)) * (height - pad * 2);
-
-  const line = pts.map((p) => `${sx(p.i)},${sy(p.v)}`).join(' ');
-  const area =
-    `${sx(pts[0].i)},${height - pad} ` +
-    line +
-    ` ${sx(pts[pts.length - 1].i)},${height - pad}`;
-
   return (
-    <svg width="100%" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-      {fill && (
-        <polygon points={area} fill={color} opacity={0.12} />
+    <div className={`card ${className}`}>
+      {(title || actions) && (
+        <div className="card-head">
+          {title && <h3 className="card-title">{title}</h3>}
+          {actions && <div className="card-actions">{actions}</div>}
+        </div>
       )}
-      <polyline
-        points={line}
-        fill="none"
-        stroke={color}
-        strokeWidth={2}
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
-export function Bar({
-  value,
-  max,
-  color = 'var(--accent)',
-}: {
-  value: number;
-  max: number;
-  color?: string;
-}) {
-  const pct = Math.max(0, Math.min(100, (value / Math.max(1, max)) * 100));
-  return (
-    <div className="bar-track">
-      <div
-        className="bar-fill"
-        style={{ width: `${pct}%`, background: color }}
-      />
+      {children}
     </div>
   );
 }
 
-export function Stat({
-  value,
+/* ---------- Badge ---------- */
+export function Badge({ status, label }: { status: string; label?: string }) {
+  return (
+    <span className={`badge badge-${status}`}>{label ?? status}</span>
+  );
+}
+
+/* ---------- Form fields ---------- */
+export function Field({
   label,
-  sub,
+  children,
+  hint,
+  className = '',
 }: {
-  value: ReactNode;
   label: string;
-  sub?: ReactNode;
+  children: ReactNode;
+  hint?: string;
+  className?: string;
 }) {
   return (
-    <div className="stat">
-      <div className="value">{value}</div>
-      <div className="label">{label}</div>
-      {sub && <div className="muted" style={{ fontSize: 12 }}>{sub}</div>}
+    <label className={`field ${className}`}>
+      <span className="field-label">{label}</span>
+      {children}
+      {hint && <span className="field-hint">{hint}</span>}
+    </label>
+  );
+}
+
+/* ---------- Modal ---------- */
+export function Modal({
+  open,
+  onClose,
+  title,
+  children,
+  wide,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: ReactNode;
+  children: ReactNode;
+  wide?: boolean;
+}) {
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="modal-overlay" onMouseDown={onClose}>
+      <div
+        className={`modal ${wide ? 'modal-wide' : ''}`}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        <div className="modal-head">
+          <h2>{title}</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+        <div className="modal-body">{children}</div>
+      </div>
     </div>
   );
+}
+
+/* ---------- Empty / loading ---------- */
+export function EmptyState({
+  icon,
+  title,
+  message,
+  action,
+}: {
+  icon?: string;
+  title: string;
+  message?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="empty">
+      {icon && <div className="empty-icon">{icon}</div>}
+      <div className="empty-title">{title}</div>
+      {message && <div className="empty-msg">{message}</div>}
+      {action && <div className="empty-action">{action}</div>}
+    </div>
+  );
+}
+
+export function Spinner({ label }: { label?: string }) {
+  return (
+    <div className="spinner-wrap">
+      <div className="spinner" />
+      {label && <span className="muted">{label}</span>}
+    </div>
+  );
+}
+
+export function PageHeader({
+  title,
+  subtitle,
+  actions,
+}: {
+  title: ReactNode;
+  subtitle?: ReactNode;
+  actions?: ReactNode;
+}) {
+  return (
+    <div className="page-header">
+      <div>
+        <h1 className="page-title">{title}</h1>
+        {subtitle && <p className="page-subtitle">{subtitle}</p>}
+      </div>
+      {actions && <div className="page-actions">{actions}</div>}
+    </div>
+  );
+}
+
+/* ---------- Toast ---------- */
+type Toast = { id: number; message: string; kind: 'ok' | 'err' };
+const ToastContext = createContext<(message: string, kind?: 'ok' | 'err') => void>(
+  () => {},
+);
+
+export function ToastProvider({ children }: { children: ReactNode }) {
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const push = useCallback((message: string, kind: 'ok' | 'err' = 'ok') => {
+    const id = Date.now() + Math.random();
+    setToasts((t) => [...t, { id, message, kind }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3500);
+  }, []);
+  return (
+    <ToastContext.Provider value={push}>
+      {children}
+      <div className="toast-stack">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast toast-${t.kind}`}>
+            {t.message}
+          </div>
+        ))}
+      </div>
+    </ToastContext.Provider>
+  );
+}
+
+export function useToast() {
+  return useContext(ToastContext);
 }

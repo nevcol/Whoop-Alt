@@ -1,127 +1,141 @@
-// Core domain model for Whoop-Alt.
-// Everything is keyed by an ISO date string (YYYY-MM-DD) so the analysis
-// engine can line up nutrition, training, body composition and recovery
-// for the same day and study how they influence each other over time.
+export interface Settings {
+  id: number;
+  business_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  website: string;
+  currency: string;
+  tax_rate: number;
+  payment_terms: number;
+  invoice_prefix: string;
+  estimate_prefix: string;
+  next_invoice_seq: number;
+  next_estimate_seq: number;
+  footer: string;
+}
 
-export type Goal =
-  | 'lose_fat'
-  | 'build_muscle'
-  | 'recomp'
-  | 'maintain'
-  | 'endurance';
-
-export type Sex = 'male' | 'female';
-
-export interface UserProfile {
+export interface Client {
+  id: number;
   name: string;
-  sex: Sex;
-  age: number;
-  heightCm: number;
-  goal: Goal;
-  // Optional manual baselines; the engine learns its own when data exists.
-  restingHrBaseline?: number;
-  hrvBaseline?: number;
+  company: string;
+  email: string;
+  phone: string;
+  address: string;
+  notes: string;
+  created_at: string;
+  invoice_count?: number;
+  total_billed?: number;
+  outstanding?: number;
+  open_invoices?: number;
 }
 
-/** A single nutrition entry for a day (one meal / item). */
-export interface FoodEntry {
-  id: string;
-  name: string;
-  calories: number;
-  protein: number; // grams
-  carbs: number; // grams
-  fat: number; // grams
+export interface LineItem {
+  id?: number;
+  description: string;
+  quantity: number;
+  rate: number;
+  position?: number;
 }
 
-/** Body-composition measurement for a day. */
-export interface BodyMeasurement {
-  weightKg: number;
-  bodyFatPct?: number;
-  // Derived & stored for convenience when bodyFatPct is present.
-  leanMassKg?: number;
-  fatMassKg?: number;
-}
-
-export type TrainingType =
-  | 'strength'
-  | 'cardio'
-  | 'hiit'
-  | 'endurance'
-  | 'mobility'
-  | 'sport';
-
-/** A training session. avgHr/maxHr can be filled from the HR monitor. */
-export interface TrainingSession {
-  id: string;
-  type: TrainingType;
-  durationMin: number;
-  avgHr?: number;
-  maxHr?: number;
-  rpe?: number; // rate of perceived exertion 1-10
-  notes?: string;
-  // Estimated strain contribution (computed by the metrics engine).
-  strain?: number;
-}
-
-/** Recovery inputs captured in the morning / from the HR monitor. */
-export interface RecoveryInputs {
-  restingHr?: number; // bpm
-  hrvMs?: number; // rMSSD in ms
-  sleepHours?: number;
-  sleepQuality?: number; // 1-10 subjective
-}
-
-/** A complete day of logged data. */
-export interface DayLog {
-  date: string; // YYYY-MM-DD
-  food: FoodEntry[];
-  body?: BodyMeasurement;
-  training: TrainingSession[];
-  recovery: RecoveryInputs;
-  waterMl?: number;
-}
-
-export interface AppState {
-  profile: UserProfile;
-  days: Record<string, DayLog>;
-}
-
-/** Output of the metrics engine for a single day. */
-export interface DayMetrics {
+export interface Payment {
+  id: number;
+  invoice_id: number;
+  amount: number;
   date: string;
-  recoveryScore: number | null; // 0-100
-  strain: number; // 0-21
-  nutrition: {
-    calories: number;
-    protein: number;
-    carbs: number;
-    fat: number;
-  };
+  method: string;
+  note: string;
+  created_at: string;
 }
 
-export type InsightTone = 'positive' | 'warning' | 'critical' | 'neutral';
+export type InvoiceStatus =
+  | 'draft'
+  | 'sent'
+  | 'partial'
+  | 'paid'
+  | 'overdue';
 
-export interface Insight {
-  id: string;
-  tone: InsightTone;
-  title: string;
-  detail: string;
+export interface Invoice {
+  id: number;
+  number: string;
+  client_id: number;
+  client?: Client;
+  status: InvoiceStatus;
+  issue_date: string;
+  due_date: string;
+  tax_rate: number;
+  discount: number;
+  notes: string;
+  from_estimate_id: number | null;
+  items: LineItem[];
+  payments: Payment[];
+  subtotal: number;
+  tax: number;
+  total: number;
+  paid: number;
+  balance: number;
 }
 
-/** The adaptive plan the engine produces from accumulated data. */
-export interface AdaptivePlan {
-  estimatedTdee: number | null; // learned maintenance calories
-  calorieTarget: number | null;
-  proteinTarget: number | null; // grams
-  carbTarget: number | null; // grams
-  fatTarget: number | null; // grams
-  trainingGuidance: string;
-  bodyTrend: {
-    weightSlopeKgPerWeek: number | null;
-    fatMassSlopeKgPerWeek: number | null;
-    leanMassSlopeKgPerWeek: number | null;
-  };
-  recoveryTrend: number | null; // avg recovery over window
-  insights: Insight[];
-  lastUpdated: string;
+export interface InvoiceListRow {
+  id: number;
+  number: string;
+  client_id: number;
+  client_name: string;
+  status: InvoiceStatus;
+  issue_date: string;
+  due_date: string;
+  total: number;
+  paid: number;
+  balance: number;
+}
+
+export type EstimateStatus =
+  | 'draft'
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'converted'
+  | 'expired';
+
+export interface Estimate {
+  id: number;
+  number: string;
+  client_id: number;
+  client?: Client;
+  status: EstimateStatus;
+  issue_date: string;
+  expiry_date: string;
+  tax_rate: number;
+  discount: number;
+  notes: string;
+  converted_invoice_id: number | null;
+  items: LineItem[];
+  subtotal: number;
+  tax: number;
+  total: number;
+}
+
+export interface EstimateListRow {
+  id: number;
+  number: string;
+  client_id: number;
+  client_name: string;
+  status: EstimateStatus;
+  issue_date: string;
+  expiry_date: string;
+  total: number;
+  converted_invoice_id: number | null;
+}
+
+export interface Summary {
+  outstanding: number;
+  overdue: number;
+  draft_total: number;
+  revenue_30: number;
+  revenue_total: number;
+  client_count: number;
+  invoice_count: number;
+  counts: Record<string, number>;
+  monthly: { label: string; revenue: number }[];
+  top_clients: { id: number; name: string; billed: number }[];
 }

@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - name: Type-check and build
+        run: npm run build
+
+      - name: Smoke-test the API boots
+        run: |
+          npm run start &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:4000/api/health > /dev/null; then
+              echo "API is up"
+              break
+            fi
+            sleep 1
+          done
+          curl -sf http://localhost:4000/api/health
+          curl -sf http://localhost:4000/api/reports/summary > /dev/null
+          kill $SERVER_PID
