@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - name: Type-check and build
+        run: npm run build
+
+      # `npm run start` / `npx tsx` are not used here: both leave a grandchild
+      # node process holding the port after `kill`, so the next step cannot bind.
+      # `node --import tsx` runs the server in this very process.
+      - name: Smoke-test the API boots
+        env:
+          NODE_ENV: production
+          PORT: 4000
+        run: |
+          node --import tsx server/index.ts &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:4000/api/health > /dev/null; then
+              echo "API is up"
+              break
+            fi
+            sleep 1
+          done
+          curl -sf http://localhost:4000/api/health
+          curl -sf http://localhost:4000/api/reports/summary > /dev/null
+          kill $SERVER_PID
+          wait $SERVER_PID 2>/dev/null || true
+
+      - name: Test authentication
+        env:
+          APP_PASSWORD: test123
+          PORT: 4100
+        run: |
+          node --import tsx server/index.ts &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:4100/api/health > /dev/null; then
+              echo "API is up"
+              break
+            fi
+            sleep 1
+          done
+          # Unauthenticated requests must be rejected.
+          if curl -sf http://localhost:4100/api/settings > /dev/null; then
+            echo "FAIL: /api/settings served without a session"
+            exit 1
+          fi
+          # Log in and confirm the session unlocks the API.
+          curl -sf -X POST http://localhost:4100/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"password":"test123"}' -c /tmp/cookies.txt > /dev/null
+          curl -sf -b /tmp/cookies.txt http://localhost:4100/api/settings > /dev/null
+          kill $SERVER_PID
+          wait $SERVER_PID 2>/dev/null || true

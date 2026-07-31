@@ -1,78 +1,162 @@
-# Whoop-Alt
+# Ledgerly
 
-An adaptive body-intelligence tracker — a Whoop alternative that doesn't just
-measure your heart, but **ties together food, body composition, training and
-recovery, learns how they affect your body, and continuously adjusts your
-plan.**
+An open-source **QuickBooks alternative** built for coaches, trainers and
+speakers: manage clients, send invoices and estimates, record payments, export
+polished PDFs, and track your revenue — all from a clean, self-hosted app.
 
-Connect *any* Bluetooth heart-rate device, log what you eat and how you train,
-weigh in, and the engine works out your real maintenance calories, scores your
-recovery, tracks whether you're actually losing fat or muscle, and rewrites
-your calorie/macro targets and training guidance to match how your body is
-responding.
+It ships with a **service catalog** covering the way a coaching business
+actually bills — personal training, strength & conditioning, tennis coaching,
+tennis performance, and speaking/teaching engagements — so a session, package or
+keynote drops onto an invoice in one click at the right rate.
 
-## What it does
+![Dashboard](https://img.shields.io/badge/stack-React%20%2B%20Express%20%2B%20SQLite-0f766e)
 
-- **❤ Heart rate over Bluetooth** — connects to any BLE device exposing the
-  standard Heart Rate Service (Polar, Garmin, Wahoo, CooSpo straps, many
-  watches/bands/rings). Shows live BPM and HR zones, records sessions with
-  auto-captured avg/max HR, and computes **live HRV (rMSSD)** from
-  RR-intervals when the device reports them.
-- **🍽 Nutrition** — quick-add or custom food logging with calories and macros,
-  shown against an adaptive target.
-- **⚖ Body composition** — weight, body-fat %, and derived lean/fat mass, with
-  28-day trend slopes (smart-scale friendly).
-- **🏋 Training** — strength/cardio/HIIT/etc. sessions with a Whoop-style 0–21
-  **strain** score from HR reserve or RPE.
-- **◎ Recovery** — 0–100 score from HRV, resting HR and sleep, each compared to
-  your own rolling baseline.
-- **🧠 Adaptive plan** — the part that makes it more than a logbook (below).
+## Features
 
-## The adaptive engine
+- **📊 Dashboard** — paid-this-month, outstanding and overdue totals, a 6-month
+  revenue chart, top clients and recent invoices at a glance.
+- **👥 Clients** — full client records with contact details and per-client
+  billing totals, outstanding balances, and their invoice/estimate history.
+- **🧾 Invoices** — line-item editor with quantities, rates, per-document tax
+  rate and discount, live totals, and auto-numbering. Statuses are derived
+  automatically: `draft → sent → partial → paid`, and `overdue` once past due.
+- **📄 Estimates / quotes** — build estimates and **convert an accepted estimate
+  into a draft invoice** in one click, copying every line item.
+- **🏋 Services & rates** — a reusable catalog of what you bill for, grouped by
+  category (Personal Training, Strength & Conditioning, Tennis Coaching, Tennis
+  Performance, Speaking & Education). Pick one from the **“Add from services”**
+  dropdown in any invoice or estimate and the description and rate fill in
+  automatically. Services can be edited, hidden from the picker, or deleted
+  without touching existing invoices.
+- **💵 Payments** — record full or partial payments against an invoice, with
+  method and notes; balances and statuses update automatically.
+- **⬇ PDF export & print** — generate a clean, vector invoice/estimate PDF
+  (via `pdfmake`) or use the print-optimised layout.
+- **⚙ Settings** — your business profile, default currency, tax rate, payment
+  terms, document prefixes and footer.
 
-Everything is keyed by date so the engine can line up the day's nutrition,
-training, body composition and recovery and study how they interact
-(`src/lib/analysis.ts`):
+## Tech stack
 
-1. **Learns your maintenance calories (TDEE)** from data, not a formula:
-   `TDEE ≈ average intake − (weight change × 7700 kcal/kg ÷ days)`. It falls
-   back to a BMR × activity estimate until there's enough data.
-2. **Sets goal-aware targets** (lose fat / build muscle / recomp / maintain /
-   endurance) for calories and protein/carb/fat.
-3. **Closes the loop** — compares your *actual* weight/fat/lean-mass trend to
-   the target for your goal and corrects calories, protecting lean mass if it
-   starts dropping during a cut.
-4. **Balances load vs recovery** — flags under-recovery for your training load,
-   or a green light to push when recovery is high.
-5. **Explains itself** — every adjustment comes with a plain-language insight on
-   the dashboard.
+| Layer | Choice |
+| --- | --- |
+| Frontend | React + TypeScript + Vite + React Router |
+| Backend | Node + Express (TypeScript, run with `tsx`) |
+| Database | SQLite via `better-sqlite3` (a file at `data/ledgerly.db`) |
+| PDF | `pdfmake` (lazy-loaded on demand) |
 
-## Run it
+The database is a single local SQLite file — no external services to set up.
+Data persists across restarts, and the schema is created automatically on first
+run. A set of realistic demo data — a service catalog, clients (a junior tennis
+player, a college athletics department, a masters-level player returning from
+rehab, and a conference organizer), plus invoices, estimates and payments — is
+seeded the first time the database is empty.
+
+## Getting started
 
 ```bash
-npm install
-npm run dev      # open the printed URL in Chrome/Edge
-npm run build    # type-check + production build
+npm install       # installs deps (compiles the native SQLite module)
+npm run dev        # starts the API (:4000) and the Vite dev server (:5173)
 ```
 
-> **Bluetooth note:** Web Bluetooth requires a Chromium browser (Chrome/Edge,
-> desktop or Android) served over **HTTPS or localhost**. `npm run dev` on
-> `localhost` works. iOS Safari does not support Web Bluetooth.
+Then open **http://localhost:5173**. The Vite dev server proxies `/api` to the
+Express backend.
 
-The app seeds realistic demo data on first run so the engine has something to
-analyze. Use **Profile → Clear all data** to start fresh, or **Reload demo
-data** to restore it. All data is stored locally in your browser
-(`localStorage`); nothing is sent to a server.
+### Production
 
-## Tech
+```bash
+npm run build      # type-check + build the client into dist/
+npm run start      # serves the built app AND the API from http://localhost:4000
+```
 
-React + TypeScript + Vite. No backend, no dependencies beyond React. Key
-modules:
+In production the Express server serves the built SPA and handles client-side
+routing, so a single process runs the whole app.
 
-| File | Responsibility |
-| --- | --- |
-| `src/lib/bluetooth.ts` | Web Bluetooth HR monitor + RR-interval HRV |
-| `src/lib/metrics.ts` | Strain, recovery, BMR, regression helpers |
-| `src/lib/analysis.ts` | TDEE learning + adaptive plan + insights |
-| `src/lib/selectors.ts` | Per-day series for charts |
-| `src/components/*` | Dashboard and the per-domain panels |
+### Password protection
+
+To add password protection (**required** for anything reachable from the
+internet), set the `APP_PASSWORD` environment variable before starting the app:
+
+```bash
+APP_PASSWORD=your_secure_password npm run start
+```
+
+When set, all API routes (except `/api/auth/*` and `/api/health`) require
+authentication via an HMAC-signed httpOnly session cookie, and the frontend
+shows a login screen before rendering the app. Sessions last 7 days.
+
+Without `APP_PASSWORD` the app is completely open — fine on your own machine,
+not fine on a public URL, where it would expose every client name, address and
+invoice to anyone who finds it.
+
+## Deploying
+
+The repo ships a `Dockerfile` that builds the client and runs the single
+Express process that serves both the SPA and the API.
+
+```bash
+docker build -t ledgerly .
+docker run -p 4000:4000 \
+  -v ledgerly-data:/data \
+  -e APP_PASSWORD=your_secure_password \
+  -e SESSION_SECRET=$(openssl rand -hex 32) \
+  ledgerly
+```
+
+The volume matters: `DATA_DIR=/data` puts the SQLite file on the mounted
+volume, so your data survives redeploys. Without it, every deploy starts from
+an empty (re-seeded) database.
+
+### Environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `APP_PASSWORD` | *(unset)* | Enables the login gate. Unset = no auth at all. |
+| `SESSION_SECRET` | dev fallback | Signs session cookies. Set to a random value in production; changing it signs everyone out. |
+| `DATA_DIR` | `./data` | Where `ledgerly.db` lives. Point at a persistent volume. |
+| `PORT` | `4000` | Port the server listens on. |
+
+### Render
+
+`render.yaml` is a ready-to-use blueprint with a 1 GB persistent disk mounted
+at `/data`. It generates `SESSION_SECRET` automatically; set `APP_PASSWORD` in
+the Render dashboard yourself. A persistent disk requires a paid plan — on the
+free tier the disk (and your data) is discarded on each deploy.
+
+## Project layout
+
+```
+server/
+  index.ts            Express app + static serving of the built client
+  db.ts               SQLite schema + demo-data seed
+  lib.ts              Totals, status derivation, document assembly, numbering
+  routes/             settings · clients · invoices · estimates · reports
+src/
+  main.tsx            App bootstrap (router + settings + toasts)
+  App.tsx             Routes
+  components/         Layout, UI primitives, DocumentView, DocumentEditor
+  pages/              Dashboard, Clients, Invoices, Estimates, Settings, …
+  lib/                api client, types, formatting, PDF generation, hooks
+```
+
+## API overview
+
+All endpoints are under `/api`:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET/PUT` | `/settings` | Business profile & defaults |
+| `GET/POST` | `/clients`, `/clients/:id` | Client CRUD (+ billing stats) |
+| `GET/POST/PUT/DELETE` | `/services`, `/services/:id` | Service catalog CRUD (`?all=true` includes hidden) |
+| `GET/POST/PUT/DELETE` | `/invoices`, `/invoices/:id` | Invoice CRUD |
+| `POST` | `/invoices/:id/status` | Mark draft / sent |
+| `POST/DELETE` | `/invoices/:id/payments` | Record / remove a payment |
+| `GET/POST/PUT/DELETE` | `/estimates`, `/estimates/:id` | Estimate CRUD |
+| `POST` | `/estimates/:id/convert` | Convert to a draft invoice |
+| `GET` | `/reports/summary` | Dashboard figures |
+
+## Notes
+
+- Money is stored in the document's own currency; totals are computed on the
+  server so the client and PDF always agree.
+- To reset to a clean slate, stop the app and delete `data/ledgerly.db*`; the
+  demo data re-seeds on the next start.

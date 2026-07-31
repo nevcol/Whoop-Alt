@@ -1,152 +1,49 @@
-import { useEffect, useMemo, useState } from 'react';
-import type {
-  AppState,
-  BodyMeasurement,
-  FoodEntry,
-  RecoveryInputs,
-  TrainingSession,
-  UserProfile,
-} from './lib/types';
-import {
-  emptyDay,
-  loadState,
-  saveState,
-  todayKey,
-} from './lib/storage';
-import { buildSampleState } from './lib/sampleData';
-import { buildAdaptivePlan } from './lib/analysis';
-import { Dashboard } from './components/Dashboard';
-import { HeartRatePanel } from './components/HeartRatePanel';
-import { FoodPanel } from './components/FoodPanel';
-import { BodyPanel } from './components/BodyPanel';
-import { TrainingPanel } from './components/TrainingPanel';
-import { ProfilePanel } from './components/ProfilePanel';
-
-export type Tab = 'dashboard' | 'heart' | 'food' | 'body' | 'training' | 'profile';
-
-export interface AppApi {
-  updateProfile: (p: Partial<UserProfile>) => void;
-  addFood: (date: string, entry: FoodEntry) => void;
-  removeFood: (date: string, id: string) => void;
-  setBody: (date: string, body: BodyMeasurement) => void;
-  addTraining: (date: string, s: TrainingSession) => void;
-  removeTraining: (date: string, id: string) => void;
-  patchRecovery: (date: string, r: Partial<RecoveryInputs>) => void;
-  setWater: (date: string, ml: number) => void;
-  loadDemo: () => void;
-  clearAll: () => void;
-}
-
-function hasAnyData(s: AppState): boolean {
-  return Object.values(s.days).some(
-    (d) =>
-      d.food.length > 0 ||
-      d.training.length > 0 ||
-      d.body != null ||
-      Object.keys(d.recovery).length > 0,
-  );
-}
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './lib/auth';
+import { Layout } from './components/Layout';
+import { Login } from './pages/Login';
+import { Dashboard } from './pages/Dashboard';
+import { Clients } from './pages/Clients';
+import { ClientDetail } from './pages/ClientDetail';
+import { Invoices } from './pages/Invoices';
+import { InvoiceEditor } from './pages/InvoiceEditor';
+import { InvoiceDetail } from './pages/InvoiceDetail';
+import { Estimates } from './pages/Estimates';
+import { EstimateEditor } from './pages/EstimateEditor';
+import { EstimateDetail } from './pages/EstimateDetail';
+import { Services } from './pages/Services';
+import { SettingsPage } from './pages/Settings';
+import { Spinner } from './components/ui';
 
 export default function App() {
-  const [state, setState] = useState<AppState>(() => {
-    const loaded = loadState();
-    // First run: seed with a realistic demo so the engine has something to show.
-    return hasAnyData(loaded) ? loaded : buildSampleState();
-  });
-  const [tab, setTab] = useState<Tab>('dashboard');
-  const today = todayKey();
+  const { authenticated, requiresAuth, loading } = useAuth();
 
-  useEffect(() => {
-    saveState(state);
-  }, [state]);
+  if (loading) {
+    return <Spinner label="Loading…" />;
+  }
 
-  const plan = useMemo(() => buildAdaptivePlan(state), [state]);
-
-  const mutateDay = (
-    date: string,
-    fn: (d: AppState['days'][string]) => AppState['days'][string],
-  ) =>
-    setState((s) => {
-      const day = s.days[date] ?? emptyDay(date);
-      return { ...s, days: { ...s.days, [date]: fn(day) } };
-    });
-
-  const api: AppApi = {
-    updateProfile: (p) =>
-      setState((s) => ({ ...s, profile: { ...s.profile, ...p } })),
-    addFood: (date, entry) =>
-      mutateDay(date, (d) => ({ ...d, food: [...d.food, entry] })),
-    removeFood: (date, id) =>
-      mutateDay(date, (d) => ({
-        ...d,
-        food: d.food.filter((f) => f.id !== id),
-      })),
-    setBody: (date, body) => mutateDay(date, (d) => ({ ...d, body })),
-    addTraining: (date, sess) =>
-      mutateDay(date, (d) => ({ ...d, training: [...d.training, sess] })),
-    removeTraining: (date, id) =>
-      mutateDay(date, (d) => ({
-        ...d,
-        training: d.training.filter((t) => t.id !== id),
-      })),
-    patchRecovery: (date, r) =>
-      mutateDay(date, (d) => ({ ...d, recovery: { ...d.recovery, ...r } })),
-    setWater: (date, ml) => mutateDay(date, (d) => ({ ...d, waterMl: ml })),
-    loadDemo: () => setState(buildSampleState()),
-    clearAll: () =>
-      setState((s) => ({ profile: s.profile, days: {} })),
-  };
+  if (requiresAuth && !authenticated) {
+    return <Login />;
+  }
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <div className="brand">
-          <span className="dot" />
-          Whoop-Alt
-        </div>
-        <span className="muted" style={{ fontSize: 13 }}>
-          {state.profile.name} · {today}
-        </span>
-      </header>
-
-      {tab === 'dashboard' && (
-        <Dashboard state={state} plan={plan} api={api} today={today} setTab={setTab} />
-      )}
-      {tab === 'heart' && (
-        <HeartRatePanel state={state} api={api} today={today} />
-      )}
-      {tab === 'food' && (
-        <FoodPanel state={state} plan={plan} api={api} today={today} />
-      )}
-      {tab === 'body' && (
-        <BodyPanel state={state} plan={plan} api={api} today={today} />
-      )}
-      {tab === 'training' && (
-        <TrainingPanel state={state} api={api} today={today} />
-      )}
-      {tab === 'profile' && <ProfilePanel state={state} api={api} />}
-
-      <nav className="nav">
-        {(
-          [
-            ['dashboard', '◎', 'Overview'],
-            ['heart', '♥', 'Heart'],
-            ['food', '🍽', 'Food'],
-            ['body', '⚖', 'Body'],
-            ['training', '🏋', 'Train'],
-            ['profile', '⚙', 'Profile'],
-          ] as [Tab, string, string][]
-        ).map(([key, icon, label]) => (
-          <button
-            key={key}
-            className={tab === key ? 'active' : ''}
-            onClick={() => setTab(key)}
-          >
-            <span className="ico">{icon}</span>
-            {label}
-          </button>
-        ))}
-      </nav>
-    </div>
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<Dashboard />} />
+        <Route path="clients" element={<Clients />} />
+        <Route path="clients/:id" element={<ClientDetail />} />
+        <Route path="invoices" element={<Invoices />} />
+        <Route path="invoices/new" element={<InvoiceEditor />} />
+        <Route path="invoices/:id" element={<InvoiceDetail />} />
+        <Route path="invoices/:id/edit" element={<InvoiceEditor />} />
+        <Route path="estimates" element={<Estimates />} />
+        <Route path="estimates/new" element={<EstimateEditor />} />
+        <Route path="estimates/:id" element={<EstimateDetail />} />
+        <Route path="estimates/:id/edit" element={<EstimateEditor />} />
+        <Route path="services" element={<Services />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
   );
 }

@@ -1,0 +1,25 @@
+# Render blueprint: one web service with a persistent disk for the SQLite file.
+# Deploy with https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: ledgerly
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter # a paid plan is required for a persistent disk
+    healthCheckPath: /api/health
+    disk:
+      name: ledgerly-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: PORT
+        value: 4000
+      # Set in the Render dashboard. Without it the app is PUBLIC — anyone with
+      # the URL can read and edit your clients, invoices and payments.
+      - key: APP_PASSWORD
+        sync: false
+      # Signs session cookies. Generated once; changing it signs everyone out.
+      - key: SESSION_SECRET
+        generateValue: true

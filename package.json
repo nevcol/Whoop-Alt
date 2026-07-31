@@ -1,24 +1,37 @@
 {
-  "name": "whoop-alt",
+  "name": "ledgerly",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "An adaptive recovery, nutrition, body-composition and training tracker that learns from your data.",
+  "description": "Ledgerly — an open-source QuickBooks alternative for invoicing, estimates, payments and client management.",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview",
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:client": "vite",
+    "dev:server": "tsx watch server/index.ts",
+    "build": "tsc --noEmit && vite build",
+    "start": "cross-env NODE_ENV=production tsx server/index.ts",
+    "preview": "npm run build && npm run start",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "cross-env": "^7.0.3",
+    "express": "^4.21.2",
+    "pdfmake": "^0.2.12",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "@types/pdfmake": "^0.2.11",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
-    "@types/web-bluetooth": "^0.0.20",
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.0",
+    "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }
