@@ -1,5 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from './lib/auth';
 import { Layout } from './components/Layout';
+import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Clients } from './pages/Clients';
 import { ClientDetail } from './pages/ClientDetail';
@@ -11,8 +13,19 @@ import { EstimateEditor } from './pages/EstimateEditor';
 import { EstimateDetail } from './pages/EstimateDetail';
 import { Services } from './pages/Services';
 import { SettingsPage } from './pages/Settings';
+import { Spinner } from './components/ui';
 
 export default function App() {
+  const { authenticated, requiresAuth, loading } = useAuth();
+
+  if (loading) {
+    return <Spinner label="Loading…" />;
+  }
+
+  if (requiresAuth && !authenticated) {
+    return <Login />;
+  }
+
   return (
     <Routes>
       <Route element={<Layout />}>

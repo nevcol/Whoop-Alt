@@ -71,6 +71,19 @@ npm run start      # serves the built app AND the API from http://localhost:4000
 In production the Express server serves the built SPA and handles client-side
 routing, so a single process runs the whole app.
 
+### Password protection
+
+To add password protection (strongly recommended for production), set the
+`APP_PASSWORD` environment variable before starting the app:
+
+```bash
+APP_PASSWORD=your_secure_password npm run start
+```
+
+When set, all API routes (except `/api/auth/*` and `/api/health`) will require
+authentication via HMAC-signed httpOnly session cookies. The frontend will show
+a login screen before rendering the app. Sessions expire after 7 days.
+
 ## Project layout
 
 ```

@@ -35,3 +35,21 @@ jobs:
           curl -sf http://localhost:4000/api/health
           curl -sf http://localhost:4000/api/reports/summary > /dev/null
           kill $SERVER_PID
+
+      - name: Test authentication
+        run: |
+          APP_PASSWORD=test123 npm run start &
+          SERVER_PID=$!
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:4000/api/health > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          # Verify API is protected
+          curl -sf http://localhost:4000/api/settings && exit 1 || true
+          # Test login
+          curl -sf -X POST http://localhost:4000/api/auth/login -H "Content-Type: application/json" -d '{"password":"test123"}' -c /tmp/cookies.txt > /dev/null
+          # Verify access with auth
+          curl -sf -b /tmp/cookies.txt http://localhost:4000/api/settings > /dev/null
+          kill $SERVER_PID

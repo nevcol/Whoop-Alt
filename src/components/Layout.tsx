@@ -1,4 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../lib/auth';
+import { Button } from './ui';
 
 const links = [
   { to: '/', label: 'Dashboard', icon: '▤', end: true },
@@ -10,6 +12,12 @@ const links = [
 ];
 
 export function Layout() {
+  const { requiresAuth, logout } = useAuth();
+
+  async function handleLogout() {
+    await logout();
+  }
+
   return (
     <div className="shell">
       <aside className="sidebar no-print">
@@ -31,7 +39,12 @@ export function Layout() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          Ledgerly · Invoicing &amp; clients
+          <div>Ledgerly · Invoicing &amp; clients</div>
+          {requiresAuth && (
+            <Button variant="ghost" size="sm" onClick={handleLogout} style={{ width: '100%', marginTop: 8 }}>
+              Sign out
+            </Button>
+          )}
         </div>
       </aside>
       <main className="main">
