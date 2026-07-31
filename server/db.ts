@@ -4,7 +4,9 @@ import { dirname, join } from 'node:path';
 import { mkdirSync } from 'node:fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = join(__dirname, '..', 'data');
+// DATA_DIR lets a deployment point the database at a persistent volume, so the
+// data survives redeploys. Defaults to ./data for local development.
+const dataDir = process.env.DATA_DIR || join(__dirname, '..', 'data');
 mkdirSync(dataDir, { recursive: true });
 
 export const db = new Database(join(dataDir, 'ledgerly.db'));

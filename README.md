@@ -73,16 +73,54 @@ routing, so a single process runs the whole app.
 
 ### Password protection
 
-To add password protection (strongly recommended for production), set the
-`APP_PASSWORD` environment variable before starting the app:
+To add password protection (**required** for anything reachable from the
+internet), set the `APP_PASSWORD` environment variable before starting the app:
 
 ```bash
 APP_PASSWORD=your_secure_password npm run start
 ```
 
-When set, all API routes (except `/api/auth/*` and `/api/health`) will require
-authentication via HMAC-signed httpOnly session cookies. The frontend will show
-a login screen before rendering the app. Sessions expire after 7 days.
+When set, all API routes (except `/api/auth/*` and `/api/health`) require
+authentication via an HMAC-signed httpOnly session cookie, and the frontend
+shows a login screen before rendering the app. Sessions last 7 days.
+
+Without `APP_PASSWORD` the app is completely open — fine on your own machine,
+not fine on a public URL, where it would expose every client name, address and
+invoice to anyone who finds it.
+
+## Deploying
+
+The repo ships a `Dockerfile` that builds the client and runs the single
+Express process that serves both the SPA and the API.
+
+```bash
+docker build -t ledgerly .
+docker run -p 4000:4000 \
+  -v ledgerly-data:/data \
+  -e APP_PASSWORD=your_secure_password \
+  -e SESSION_SECRET=$(openssl rand -hex 32) \
+  ledgerly
+```
+
+The volume matters: `DATA_DIR=/data` puts the SQLite file on the mounted
+volume, so your data survives redeploys. Without it, every deploy starts from
+an empty (re-seeded) database.
+
+### Environment variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `APP_PASSWORD` | *(unset)* | Enables the login gate. Unset = no auth at all. |
+| `SESSION_SECRET` | dev fallback | Signs session cookies. Set to a random value in production; changing it signs everyone out. |
+| `DATA_DIR` | `./data` | Where `ledgerly.db` lives. Point at a persistent volume. |
+| `PORT` | `4000` | Port the server listens on. |
+
+### Render
+
+`render.yaml` is a ready-to-use blueprint with a 1 GB persistent disk mounted
+at `/data`. It generates `SESSION_SECRET` automatically; set `APP_PASSWORD` in
+the Render dashboard yourself. A persistent disk requires a paid plan — on the
+free tier the disk (and your data) is discarded on each deploy.
 
 ## Project layout
 
